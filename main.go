@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"reflect"
 	"strings"
@@ -169,73 +168,56 @@ type Gdo interface {
 
 type properties struct {
 	Db       *sql.DB
-	DbType   string
+	DBType   string
 	User     string
 	Password string
 	Hostname string
 	Port     string
-	Database string
-	timeout  uint8
+	DBName   string
+	Protocol string
 }
 
 type DBProtocol interface {
-	GetProtocol() string
+	GetDBType() string
 	GetUser() string
 	GetPassword() string
 	GetHost() string
 	GetPort() string
 	GetDBName() string
+	GetProtocol() string
 }
 
-func NewGdo(dbType string, user string, password string, hostname string, port string, database string) Gdo {
+func NewGdo(dbType string, user string, password string, hostname string, port string, dbName string) Gdo {
 	return &properties{
-		DbType:   dbType,
+		DBType:   dbType,
 		User:     user,
 		Password: password,
 		Hostname: hostname,
 		Port:     port,
-		Database: database,
-		timeout:  3,
+		DBName:   dbName,
 	}
 }
 
 func NewGdoWithDBProtocol(dbp DBProtocol) Gdo {
 	return &properties{
-		DbType:   dbp.GetProtocol(),
+		DBType:   dbp.GetDBType(),
 		User:     dbp.GetUser(),
 		Password: dbp.GetPassword(),
 		Hostname: dbp.GetHost(),
 		Port:     dbp.GetPort(),
-		Database: dbp.GetDBName(),
-		timeout:  3,
+		DBName:   dbp.GetDBName(),
+		Protocol: dbp.GetProtocol(),
 	}
-}
-
-func (p *properties) SetTimeout(sec uint8) *properties {
-	p.timeout = sec
-	return p
-}
-
-func (p *properties) getProtocol() string {
-	return fmt.Sprintf(
-		"%s:%s@tcp(%s:%s)/%s?timeout=%ds",
-		p.User,
-		p.Password,
-		p.Hostname,
-		p.Port,
-		p.Database,
-		p.timeout,
-	)
 }
 
 func (p *properties) Connect() error {
 	var err error
 
-	switch p.DbType {
+	switch p.DBType {
 	case "mysql":
-		p.Db, err = sql.Open(p.DbType, p.getProtocol())
+		p.Db, err = sql.Open(p.DBType, p.Protocol)
 	default:
-		err = errors.New("Invalid database type {" + p.DbType + "}")
+		err = errors.New("Invalid database type {" + p.DBType + "}")
 	}
 
 	return err
